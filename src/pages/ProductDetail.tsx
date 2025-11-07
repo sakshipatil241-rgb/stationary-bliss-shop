@@ -3,11 +3,23 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { products } from "@/data/products";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { useCartStore } from "@/stores/cartStore";
+import { toast } from "sonner";
 
 const ProductDetail = () => {
   const { handle } = useParams();
   const product = products.find(p => p.id === handle);
+  const addItem = useCartStore((state) => state.addItem);
+
+  const handleAddToCart = () => {
+    if (product) {
+      addItem(product);
+      toast.success("Added to cart", {
+        description: `${product.title} has been added to your cart`,
+      });
+    }
+  };
 
   if (!product) {
     return (
@@ -55,11 +67,10 @@ const ProductDetail = () => {
                 </p>
               </div>
               
-              <div className="bg-secondary/20 p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  This is a display-only website. Payment functionality has been removed.
-                </p>
-              </div>
+              <Button size="lg" className="w-full sm:w-auto" onClick={handleAddToCart}>
+                <ShoppingCart className="w-5 h-5 mr-2" />
+                Add to Cart
+              </Button>
             </div>
           </div>
         </div>

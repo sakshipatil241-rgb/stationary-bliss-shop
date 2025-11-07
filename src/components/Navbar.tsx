@@ -6,6 +6,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { CartDrawer } from "@/components/CartDrawer";
 
 export const Navbar = () => {
   return (
@@ -30,10 +31,12 @@ export const Navbar = () => {
             <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
               Contact
             </Link>
+            <CartDrawer />
           </div>
           
           {/* Mobile Navigation */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            <CartDrawer />
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">

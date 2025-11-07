@@ -1,12 +1,26 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart } from "lucide-react";
 import { Product } from "@/data/products";
+import { useCartStore } from "@/stores/cartStore";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   product: Product;
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
+  const addItem = useCartStore((state) => state.addItem);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addItem(product);
+    toast.success("Added to cart", {
+      description: `${product.title} has been added to your cart`,
+    });
+  };
+
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
       <Link to={`/product/${product.id}`}>
@@ -32,6 +46,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           <span className="text-xl font-bold text-primary">
             ${product.price.toFixed(2)}
           </span>
+          <Button size="sm" onClick={handleAddToCart}>
+            <ShoppingCart className="w-4 h-4 mr-1" />
+            Add
+          </Button>
         </div>
       </CardContent>
     </Card>
