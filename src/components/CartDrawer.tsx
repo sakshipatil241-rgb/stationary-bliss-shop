@@ -66,7 +66,7 @@ export const CartDrawer = () => {
                         <h4 className="font-medium truncate">{item.product.title}</h4>
                         <p className="text-sm text-muted-foreground">{item.product.category}</p>
                         <p className="font-semibold text-primary">
-                          ${item.product.price.toFixed(2)}
+                          ₹{(item.product.price * 83).toFixed(2)}
                         </p>
                       </div>
                       
@@ -109,7 +109,7 @@ export const CartDrawer = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total</span>
                   <span className="text-xl font-bold text-primary">
-                    ${totalPrice.toFixed(2)}
+                    ₹{(totalPrice * 83).toFixed(2)}
                   </span>
                 </div>
                 

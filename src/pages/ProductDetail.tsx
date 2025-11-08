@@ -58,7 +58,7 @@ const ProductDetail = () => {
             <div>
               <h1 className="text-4xl font-bold mb-4">{product.title}</h1>
               <p className="text-3xl font-bold text-primary mb-6">
-                ${product.price.toFixed(2)}
+                ₹{(product.price * 83).toFixed(2)}
               </p>
               
               <div className="mb-8">

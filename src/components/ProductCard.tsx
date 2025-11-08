@@ -44,7 +44,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </p>
         <div className="flex items-center justify-between">
           <span className="text-xl font-bold text-primary">
-            ${product.price.toFixed(2)}
+            ₹{(product.price * 83).toFixed(2)}
           </span>
           <Button size="sm" onClick={handleAddToCart}>
             <ShoppingCart className="w-4 h-4 mr-1" />
