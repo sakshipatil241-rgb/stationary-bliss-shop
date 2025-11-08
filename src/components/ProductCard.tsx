@@ -1,57 +1,86 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { ShoppingCart } from "lucide-react";
-import { Product } from "@/data/products";
+import { ShopifyProduct } from "@/lib/shopify";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
 
 interface ProductCardProps {
-  product: Product;
+  product: ShopifyProduct;
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
-  const addItem = useCartStore((state) => state.addItem);
+  const addItem = useCartStore(state => state.addItem);
+  const { node } = product;
+  
+  const handleAddToCart = () => {
+    const firstVariant = node.variants.edges[0]?.node;
+    if (!firstVariant) return;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    addItem(product);
+    const cartItem = {
+      product,
+      variantId: firstVariant.id,
+      variantTitle: firstVariant.title,
+      price: firstVariant.price,
+      quantity: 1,
+      selectedOptions: firstVariant.selectedOptions || []
+    };
+    
+    addItem(cartItem);
     toast.success("Added to cart", {
-      description: `${product.title} has been added to your cart`,
+      description: `${node.title} has been added to your cart.`,
+      position: "top-center",
     });
   };
 
+  const imageUrl = node.images.edges[0]?.node.url;
+  const price = node.priceRange.minVariantPrice;
+
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
-      <Link to={`/product/${product.id}`}>
+      <Link to={`/product/${node.handle}`}>
         <div className="aspect-square overflow-hidden bg-secondary/20">
-          <img
-            src={product.image}
-            alt={product.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={node.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+              No image
+            </div>
+          )}
         </div>
       </Link>
       
       <CardContent className="p-4">
-        <Link to={`/product/${product.id}`}>
+        <Link to={`/product/${node.handle}`}>
           <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-primary transition-colors">
-            {product.title}
+            {node.title}
           </h3>
         </Link>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-          {product.description}
+          {node.description}
         </p>
         <div className="flex items-center justify-between">
           <span className="text-xl font-bold text-primary">
-            ₹{(product.price * 83).toFixed(2)}
+            ${parseFloat(price.amount).toFixed(2)}
           </span>
-          <Button size="sm" onClick={handleAddToCart}>
-            <ShoppingCart className="w-4 h-4 mr-1" />
-            Add
-          </Button>
         </div>
       </CardContent>
+      
+      <CardFooter className="p-4 pt-0">
+        <Button 
+          onClick={handleAddToCart}
+          className="w-full"
+          size="sm"
+        >
+          <ShoppingCart className="w-4 h-4 mr-2" />
+          Add to Cart
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

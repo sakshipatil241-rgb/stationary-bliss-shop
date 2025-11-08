@@ -9,15 +9,34 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { createStorefrontCheckout } from "@/lib/shopify";
+import { toast } from "sonner";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { items, updateQuantity, removeItem } = useCartStore();
+  const { items, updateQuantity, removeItem, setLoading, isLoading } = useCartStore();
   
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
+
+  const handleCheckout = async () => {
+    if (items.length === 0) return;
+    
+    setLoading(true);
+    try {
+      const checkoutUrl = await createStorefrontCheckout(items);
+      window.open(checkoutUrl, '_blank');
+      toast.success("Opening checkout...");
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      toast.error("Failed to create checkout. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -53,20 +72,24 @@ export const CartDrawer = () => {
               <div className="flex-1 overflow-y-auto pr-2 min-h-0">
                 <div className="space-y-4">
                   {items.map((item) => (
-                    <div key={item.product.id} className="flex gap-4 p-2 bg-card rounded-lg">
+                    <div key={item.variantId} className="flex gap-4 p-2 bg-card rounded-lg">
                       <div className="w-16 h-16 bg-secondary/20 rounded-md overflow-hidden flex-shrink-0">
-                        <img
-                          src={item.product.image}
-                          alt={item.product.title}
-                          className="w-full h-full object-cover"
-                        />
+                        {item.product.node.images?.edges?.[0]?.node && (
+                          <img
+                            src={item.product.node.images.edges[0].node.url}
+                            alt={item.product.node.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">{item.product.title}</h4>
-                        <p className="text-sm text-muted-foreground">{item.product.category}</p>
+                        <h4 className="font-medium truncate">{item.product.node.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {item.selectedOptions.map(option => option.value).join(' • ')}
+                        </p>
                         <p className="font-semibold text-primary">
-                          ₹{(item.product.price * 83).toFixed(2)}
+                          {item.price.currencyCode} ${parseFloat(item.price.amount).toFixed(2)}
                         </p>
                       </div>
                       
@@ -75,7 +98,7 @@ export const CartDrawer = () => {
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => removeItem(item.product.id)}
+                          onClick={() => removeItem(item.variantId)}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -85,7 +108,7 @@ export const CartDrawer = () => {
                             variant="outline"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -94,7 +117,7 @@ export const CartDrawer = () => {
                             variant="outline"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -109,15 +132,28 @@ export const CartDrawer = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Total</span>
                   <span className="text-xl font-bold text-primary">
-                    ₹{(totalPrice * 83).toFixed(2)}
+                    ${totalPrice.toFixed(2)}
                   </span>
                 </div>
                 
-                <div className="bg-secondary/20 p-3 rounded-lg">
-                  <p className="text-xs text-muted-foreground text-center">
-                    Checkout functionality is for display only
-                  </p>
-                </div>
+                <Button 
+                  onClick={handleCheckout}
+                  className="w-full" 
+                  size="lg"
+                  disabled={items.length === 0 || isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating Checkout...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Checkout with Shopify
+                    </>
+                  )}
+                </Button>
               </div>
             </>
           )}
