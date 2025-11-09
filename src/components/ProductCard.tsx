@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Heart } from "lucide-react";
 import { Product } from "@/data/products";
 import { useCartStore } from "@/stores/cartStore";
+import { useWishlist } from "@/hooks/useWishlist";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
@@ -12,6 +14,8 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const addItem = useCartStore((state) => state.addItem);
+  const { wishlistItems, toggleWishlist } = useWishlist();
+  const isInWishlist = wishlistItems.includes(product.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -21,15 +25,28 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     });
   };
 
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toggleWishlist(product.id, product.id);
+  };
+
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-shadow">
       <Link to={`/product/${product.id}`}>
-        <div className="aspect-square overflow-hidden bg-secondary/20">
+        <div className="aspect-square overflow-hidden bg-secondary/20 relative">
           <img
             src={product.image}
             alt={product.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+            onClick={handleWishlistToggle}
+          >
+            <Heart className={cn("w-4 h-4", isInWishlist && "fill-red-500 text-red-500")} />
+          </Button>
         </div>
       </Link>
       
