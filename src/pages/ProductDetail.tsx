@@ -4,14 +4,9 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { getProductByHandle } from "@/lib/shopify";
-import { ShoppingCart, Loader2, Heart, Star } from "lucide-react";
+import { ShoppingCart, Loader2 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
-import { useWishlist } from "@/hooks/useWishlist";
-import { supabase } from "@/integrations/supabase/client";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
 
 const ProductDetail = () => {
   const { handle } = useParams();
@@ -19,12 +14,6 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const addItem = useCartStore(state => state.addItem);
-  const { user } = useAuth();
-  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist(user?.id);
-  const [ratings, setRatings] = useState<any[]>([]);
-  const [userRating, setUserRating] = useState(0);
-  const [userReview, setUserReview] = useState("");
-  const [avgRating, setAvgRating] = useState(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -33,7 +22,6 @@ const ProductDetail = () => {
       try {
         const fetchedProduct = await getProductByHandle(handle);
         setProduct(fetchedProduct);
-        fetchRatings(fetchedProduct.id);
       } catch (error) {
         console.error("Error fetching product:", error);
       } finally {
@@ -43,63 +31,6 @@ const ProductDetail = () => {
 
     fetchProduct();
   }, [handle]);
-
-  const fetchRatings = async (productId: string) => {
-    const { data, error } = await supabase
-      .from("product_ratings")
-      .select("*, profiles(full_name)")
-      .eq("product_id", productId)
-      .order("created_at", { ascending: false });
-
-    if (!error && data) {
-      setRatings(data);
-      const avg = data.reduce((acc, r) => acc + r.rating, 0) / data.length || 0;
-      setAvgRating(avg);
-      
-      const userR = data.find(r => r.user_id === user?.id);
-      if (userR) {
-        setUserRating(userR.rating);
-        setUserReview(userR.review || "");
-      }
-    }
-  };
-
-  const handleSubmitRating = async () => {
-    if (!user) {
-      toast.error("Please sign in to rate this product");
-      return;
-    }
-    if (userRating === 0) {
-      toast.error("Please select a rating");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("product_ratings")
-      .upsert({
-        user_id: user.id,
-        product_id: product.id,
-        product_handle: product.handle,
-        rating: userRating,
-        review: userReview,
-      });
-
-    if (error) {
-      toast.error("Failed to submit rating");
-    } else {
-      toast.success("Rating submitted!");
-      fetchRatings(product.id);
-    }
-  };
-
-  const handleWishlistToggle = () => {
-    if (!product) return;
-    if (isInWishlist(product.id)) {
-      removeFromWishlist(product.id);
-    } else {
-      addToWishlist(product.id, product.handle);
-    }
-  };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -172,33 +103,12 @@ const ProductDetail = () => {
             </div>
             
             <div>
-              <div className="flex items-start justify-between mb-4">
-                <h1 className="text-4xl font-bold">{product.title}</h1>
-                <Button variant="outline" size="icon" onClick={handleWishlistToggle}>
-                  <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? "fill-red-500 text-red-500" : ""}`} />
-                </Button>
-              </div>
-              
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-5 w-5 ${star <= Math.round(avgRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {avgRating > 0 ? `${avgRating.toFixed(1)} (${ratings.length} reviews)` : "No reviews yet"}
-                </span>
-              </div>
-              
+              <h1 className="text-4xl font-bold mb-4">{product.title}</h1>
               <p className="text-3xl font-bold text-primary mb-6">
                 ${parseFloat(selectedVariant.price.amount).toFixed(2)}
               </p>
               
               <div className="mb-8">
-                <h3 className="font-semibold mb-2">Description</h3>
                 <p className="text-muted-foreground whitespace-pre-line">
                   {product.description}
                 </p>
@@ -229,65 +139,6 @@ const ProductDetail = () => {
                 <ShoppingCart className="w-5 h-5 mr-2" />
                 Add to Cart
               </Button>
-
-              {/* Rating Section */}
-              <div className="mt-12">
-                <h3 className="text-2xl font-bold mb-6">Customer Reviews</h3>
-                
-                {user && (
-                  <Card className="mb-6">
-                    <CardContent className="pt-6">
-                      <h4 className="font-semibold mb-3">Your Rating</h4>
-                      <div className="flex gap-2 mb-4">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            onClick={() => setUserRating(star)}
-                            className="focus:outline-none"
-                          >
-                            <Star
-                              className={`h-6 w-6 ${star <= userRating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                      <Textarea
-                        placeholder="Write your review (optional)"
-                        value={userReview}
-                        onChange={(e) => setUserReview(e.target.value)}
-                        className="mb-4"
-                      />
-                      <Button onClick={handleSubmitRating}>Submit Rating</Button>
-                    </CardContent>
-                  </Card>
-                )}
-
-                <div className="space-y-4">
-                  {ratings.map((rating) => (
-                    <Card key={rating.id}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-semibold">{rating.profiles?.full_name || "Anonymous"}</span>
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-4 w-4 ${star <= rating.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        {rating.review && (
-                          <p className="text-muted-foreground">{rating.review}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {new Date(rating.created_at).toLocaleDateString()}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>
