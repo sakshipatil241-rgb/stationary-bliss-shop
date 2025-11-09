@@ -1,28 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
-import { getProducts, ShopifyProduct } from "@/lib/shopify";
-import { Loader2 } from "lucide-react";
+import { products } from "@/data/products";
+import { Button } from "@/components/ui/button";
 
 const Shop = () => {
-  const [products, setProducts] = useState<ShopifyProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  
+  const filteredProducts = selectedCategory === "all" 
+    ? products 
+    : products.filter(product => product.category === selectedCategory);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const fetchedProducts = await getProducts(50);
-        setProducts(fetchedProducts);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  const categories = [
+    { id: "all", label: "All Products" },
+    { id: "stationery", label: "Stationery" },
+    { id: "gifts", label: "Gifts" },
+    { id: "crafts", label: "Crafts" },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -39,24 +34,30 @@ const Shop = () => {
         </div>
         
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">No products found</p>
-              <p className="text-sm text-muted-foreground">
-                Create your first product by telling me what you'd like to sell and the price.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-3 mb-8">
+            {categories.map((category) => (
+              <Button
+                key={category.id}
+                variant={selectedCategory === category.id ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category.id)}
+                className="capitalize"
+              >
+                {category.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground">
+              Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </div>
       </main>
       
